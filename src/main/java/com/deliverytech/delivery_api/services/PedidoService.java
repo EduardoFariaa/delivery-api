@@ -1,8 +1,9 @@
 package com.deliverytech.delivery_api.services;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-import com.deliverytech.delivery_api.entity.PedidoDTO;
+import com.deliverytech.delivery_api.dto.request.PedidoRequestDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +19,7 @@ import com.deliverytech.delivery_api.repository.RestauranteRepository;
 
 @Service
 public class PedidoService {
-    
+
     @Autowired
     private PedidoRepository pedidoRepository;
 
@@ -34,12 +35,12 @@ public class PedidoService {
     /**
      * Criar novo pedido
      */
-    public Pedido criarPedido(PedidoDTO dto) {
+    public Pedido criarPedido(PedidoRequestDTO dto) {
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
-            .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado: " + dto.getClienteId()));
+                .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado: " + dto.getClienteId()));
 
         Restaurante restaurante = restauranteRepository.findById(dto.getRestauranteId())
-            .orElseThrow(() -> new IllegalArgumentException("Restaurante não encontrado: " + dto.getRestauranteId()));
+                .orElseThrow(() -> new IllegalArgumentException("Restaurante não encontrado: " + dto.getRestauranteId()));
 
         if (!cliente.getAtivo()) {
             throw new IllegalArgumentException("Cliente inativo não pode fazer pedidos");
@@ -75,7 +76,7 @@ public class PedidoService {
      */
     public Pedido atualizarStatus(Long pedidoId, StatusPedido status) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
-            .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado: " + pedidoId));
+                .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado: " + pedidoId));
 
         if (pedido.getStatus().equals(StatusPedido.ENTREGUE.name())) {
             throw new IllegalArgumentException("Pedido já finalizado: " + pedidoId);
@@ -84,5 +85,22 @@ public class PedidoService {
         pedido.setStatus(status.name());
         return pedidoRepository.save(pedido);
     }
-    
+    // Pedidos por cliente
+    public List<Pedido> buscarPedidosPorCliente(Long clienteId) {
+        return pedidoRepository.findByClienteId(clienteId);
+    }
+    // listar por status
+    public List<Pedido> listarPorStatus(StatusPedido status) {
+        return pedidoRepository.findByStatus(status);
+    }
+    // Listar os 10 pedidos mais recentes
+    public List<Pedido> listarRecentes() {
+        return pedidoRepository.findTop10ByOrderByDataPedidoDesc();
+    }
+    /**
+     * Listar pedidos por período
+     */
+    public List<Pedido> listarPorPeriodo(LocalDateTime inicio, LocalDateTime fim) {
+        return pedidoRepository.findByDataPedidoBetween(inicio, fim);
+    }
 }
